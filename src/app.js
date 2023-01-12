@@ -24,8 +24,25 @@ try {
     const Messages = db.collection("Messages")
     const today = Date.now();
 
+app.post("/participants", (req,res) ={
 
+})
 
+app.get("/participants", (req,res) ={
+
+})
+
+app.post("/messages", (req,res) ={
+
+})
+
+app.get("/messages", (req,res) ={
+
+})
+
+app.get("/status", (req,res) ={
+
+})
 
 
 

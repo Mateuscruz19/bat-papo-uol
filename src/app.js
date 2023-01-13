@@ -46,7 +46,12 @@ app.post("/participants", async (req,res) => {
 
     const { name } = req.body
 
-    if(typeof name != 'string' || !name) return res.status(422)
+    const { error } = participantsSchema.validate({ name }, { abortEarly: false })
+
+    if(error) {
+        const errors = error.details.map((d) => d.message);
+        return res.status(422).send(errors)
+    }
 
     try {
         const participantsExists = await participants.findOne({ name });

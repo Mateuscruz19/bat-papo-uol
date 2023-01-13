@@ -89,19 +89,27 @@ app.post("/messages", async (req,res) => {
 
     try {
 
-        const Output = await messageSchema.validateAsync(req.body);
+    
+        const Output = req.body;
         const { user } = req.headers
     
         const userValidade = await participants.findOne({ name: user })
         if(!userValidade) return res.sendStatus(422)
 
-    const message = {
+    const messagePut = {
         from: user,
         ...Output,
         time: dayjs(Date.now()).format('HH:mm:ss')
     };
 
-    const messageOutput = await messages.insertOne(message);
+    const { errorss } = messageSchema.validate(messagePut, { abortEarly: false });
+
+        if (errorss) {
+          const errors = error.details.map((d) => d.message);
+          return res.status(422).send(errors);
+        }
+
+    const messageOutput = await messages.insertOne(messagePut);
 
     if(messageOutput) return res.sendStatus(201);
 

@@ -15,11 +15,9 @@ app.use(express.json());
     });
 
     const messageSchema = joi.object({
-        from: joi.string().required(),
-        to: joi.string().required().min(3),
-        text: joi.string().required().min(1),
-        type: joi.string().required().valid("message", "private_message"),
-        time: joi.string(),
+        to: joi.string().min(1).required(),
+        text: joi.string().min(1).required(),
+        type: joi.string().valid('message','private_message').required()
     })
 
 
@@ -89,31 +87,31 @@ app.get("/participants", async (req, res) => {
 app.post("/messages", async (req,res) => {
 
     const { to, text, type } = req.body
-    const { User } = req.headers
+    const { user } = req.headers
 
     const message = {
-        from: User,
+        from: user,
         to,
         text,
         type,
         time: dayjs().format("HH:mm:ss")
     };
 
-    const userValidade = await participants.findOne({ name: User })
+    const userValidade = await participants.findOne({ name: user })
     if(!userValidade) return res.sendStatus(422)
 
     try {
         const { errors } = messageSchema.validate(message,{abortEarly:false});
+
         if(errors) {
-            errors.details.map(d => d.message);
-            return res.status(422).send(errors)
+            return res.status(422)
         };
 
         await messages.insertOne(message);
 
         res.sendStatus(201);
     } catch (error) {
-        console.log(err)
+        console.log(error)
        return res.sendStatus(500);
     }
 

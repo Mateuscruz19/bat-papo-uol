@@ -161,6 +161,34 @@ app.post("/status", async (req,res) => {
     
  })
 
+setInterval(async () => {
+
+    const timeRemove = today - 10000;
+
+    try {
+        
+        const layoff = await participants.find( {lastStatus: {$lte: timeRemove}}).toArray();
+
+        if(layoff.length > 0) {
+            const leaveNotice = participants.map((p) => {
+                return {
+                    from: p.name,
+                    to: "Todos",
+                    text: "sai da sala...",
+                    type: "status",
+                    time: dayjs().format("HH:mm:ss"),
+                };
+            });
+
+            await messages.insertMany(leaveNotice)
+            await participants.deleteMany( {lastStatus: { $lte: timeRemove}})
+        }
+
+    } catch (error) {
+        console.log(error);
+        res.sendStatus(500);
+    }
+}, 15000);
 
 
 app.listen(5000, () => console.log(`Server running in port: 5000`));

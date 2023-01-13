@@ -85,8 +85,8 @@ app.get("/participants", async (req, res) => {
 })
 
 app.post("/messages", async (req,res) => {
-
    
+
     try {
 
         const Output = await messageSchema.validateAsync(req.body);
@@ -95,13 +95,11 @@ app.post("/messages", async (req,res) => {
         const userValidade = await participants.findOne({ name: user })
         if(!userValidade) return res.sendStatus(422)
 
-
     const message = {
         from: user,
-        ...message,
+        ...Output,
         time: dayjs(Date.now()).format('HH:mm:ss')
     };
-
 
     const messageOutput = await messages.insertOne(message);
 

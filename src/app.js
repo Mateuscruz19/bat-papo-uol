@@ -61,7 +61,7 @@ app.post("/participants", async (req,res) => {
     await messages.insertOne({
         from: name,
         to: "Todos",
-        text: "entrei na sala...",
+        text: "entra na sala...",
         type: "status",
         time: dayjs().format("HH:mm:ss")
     })
@@ -87,9 +87,35 @@ app.get("/participants", async (res) => {
 
 })
 
-// app.post("/messages", (req,res) => {
+app.post("/messages", async(req,res) => {
 
-// })
+    const { to, text, type } = req.body
+    const { User } = req.headers
+
+    const message = {
+        from: User,
+        to,
+        text,
+        type,
+        time: dayjs().format("HH:mm:ss")
+    };
+
+    try {
+        const { error } = messageSchema.validate(message,{abortEarly:false});
+
+        if(error) {
+            const errors = error.details.map(d => d.message);
+            return res.status(422).send(errors)
+        };
+
+        await messages.insertOne(message);
+        res.sendStatus(201);
+    } catch (error) {
+        console.log(err)
+        res.sendStatus(500);
+    }
+
+});
 
 // app.get("/messages", (req,res) => {
 

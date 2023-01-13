@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import { MongoClient } from "mongodb";
 import dayjs from "dayjs";
 import joi from "joi";
+import striptags from "striptags";
 
 const app = express();
 dotenv.config();
@@ -40,6 +41,8 @@ try {
 app.post("/participants", async (req,res) => {
 
     const { name } = req.body
+
+    striptags(name)
 
     const { error } = participantsSchema.validate({ name }, { abortEarly: false })
 

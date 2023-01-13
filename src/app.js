@@ -86,32 +86,32 @@ app.get("/participants", async (req, res) => {
 
 app.post("/messages", async (req,res) => {
 
-    const { to, text, type } = req.body
-    const { user } = req.headers
+   
+    try {
+
+        const Output = await messageSchema.validateAsync(req.body);
+        const { user } = req.headers
+    
+        const userValidade = await participants.findOne({ name: user })
+        if(!userValidade) return res.sendStatus(422)
+
 
     const message = {
         from: user,
-        to,
-        text,
-        type,
-        time: dayjs().format("HH:mm:ss")
+        ...message,
+        time: dayjs(Date.now()).format('HH:mm:ss')
     };
 
-    const userValidade = await participants.findOne({ name: user })
-    if(!userValidade) return res.sendStatus(422)
 
-    try {
-        const { errors } = messageSchema.validate(message,{abortEarly:false});
+    const messageOutput = await messages.insertOne(message);
 
-        if(errors) {
-            return res.status(422)
-        };
+    if(messageOutput) return res.sendStatus(201);
 
-        await messages.insertOne(message);
-
-        res.sendStatus(201);
     } catch (error) {
         console.log(error)
+
+        if(error.isJoi) return res.sendStatus;
+
        return res.sendStatus(500);
     }
 

@@ -1,4 +1,4 @@
-import express from "express";
+import express, { query } from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import { MongoClient } from "mongodb";
@@ -87,7 +87,7 @@ app.get("/participants", async (res) => {
 
 })
 
-app.post("/messages", async(req,res) => {
+app.post("/messages", async (req,res) => {
 
     const { to, text, type } = req.body
     const { User } = req.headers
@@ -117,9 +117,30 @@ app.post("/messages", async(req,res) => {
 
 });
 
-// app.get("/messages", (req,res) => {
+ app.get("/messages", async (req,res) => {
 
-// })
+    const limit  = Number(req.query.limit);
+    const { User } = req.headers;
+
+    if(!limit){
+        const allMessages = messages.find();
+        res.send(allMessages)
+    }
+
+    try {
+        const messages = await messages.find({$or: [
+            {from: User},
+            {to: {$in: [User, "Todos"] } },
+            {type:"message"}
+        ]})
+        .limit(limit)
+      .toArray();
+      
+    } catch (err) {
+        console.log(err)
+        res.sendStatus(500);
+    }
+ })
 
 // app.get("/status", (req,res) => {
 

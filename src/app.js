@@ -73,15 +73,15 @@ app.post("/participants", async (req,res) => {
 })
 
 
-app.get("/participants", async (res) => {
+app.get("/participants", async (req, res) => {
     
     try {
        const online = await participants.find().toArray();
-       if(!online) return res.status(404);
-       res.send(online)
+
+       return res.send(online)
     } catch (error) {
         console.log(error)
-        res.status(500);
+        return res.status(500);
     } 
 
 })

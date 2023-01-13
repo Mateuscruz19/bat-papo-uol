@@ -100,23 +100,25 @@ app.post("/messages", async (req,res) => {
     };
 
     const userValidade = await participants.findOne({ name: User })
-    if(!userValidade) return res.send(422)
+    if(!userValidade) return res.sendStatus(422)
 
     try {
-        const { error } = messageSchema.validate(message,{abortEarly:false});
-        if(error) {
-            error.details.map(d => d.message);
-            return res.status(422)
+        const { errors } = messageSchema.validate(message,{abortEarly:false});
+        if(errors) {
+            errors.details.map(d => d.message);
+            return res.status(422).send(errors)
         };
 
+        await messages.insertOne(message);
+
+        res.sendStatus(201);
     } catch (error) {
         console.log(err)
        return res.sendStatus(500);
     }
 
-    await messages.insertOne(message);
-    res.sendStatus(201);
 });
+
 
 app.get("/messages", async (req,res) => {
 
@@ -125,11 +127,11 @@ app.get("/messages", async (req,res) => {
 
     if(!limit){
         const allMessages = messages.find();
-        res.send(allMessages)
+       return res.send(allMessages)
     }
 
     try {
-        const messages = await messages.find({$or: [
+        const messageControled = await messages.find({$or: [
             {from: User},
             {to: {$in: [User, "Todos"] } },
             {type:"message"}
@@ -137,6 +139,7 @@ app.get("/messages", async (req,res) => {
         .limit(limit)
       .toArray();
 
+        res.send(messageControled)
     } catch (err) {
         console.log(err)
         res.sendStatus(500);
@@ -172,7 +175,7 @@ setInterval(async () => {
         const layoff = await participants.find( {lastStatus: {$lte: timeRemove}}).toArray();
 
         if(layoff.length > 0) {
-            const leaveNotice = participants.map((p) => {
+            const leaveNotice = layoff.map((p) => {
                 return {
                     from: p.name,
                     to: "Todos",

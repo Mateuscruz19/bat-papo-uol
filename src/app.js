@@ -99,21 +99,23 @@ app.post("/messages", async (req,res) => {
         time: dayjs().format("HH:mm:ss")
     };
 
+    const userValidade = await participants.findOne({ name: User })
+    if(!userValidade) return res.send(422)
+
     try {
         const { error } = messageSchema.validate(message,{abortEarly:false});
-
         if(error) {
-            const errors = error.details.map(d => d.message);
-            return res.status(422).send(errors)
+            error.details.map(d => d.message);
+            return res.status(422)
         };
 
-        await messages.insertOne(message);
-        res.sendStatus(201);
     } catch (error) {
         console.log(err)
-        res.sendStatus(500);
+       return res.sendStatus(500);
     }
 
+    await messages.insertOne(message);
+    res.sendStatus(201);
 });
 
 app.get("/messages", async (req,res) => {

@@ -15,9 +15,9 @@ app.use(express.json());
     });
 
     const messageSchema = joi.object({
-        to: joi.string().min(1).required(),
+        to: joi.string().required(),
         text: joi.string().min(1).required(),
-        type: joi.string().valid('message','private_message').required()
+        type: joi.any().valid('message','private_message').required()
     })
 
 
@@ -102,12 +102,9 @@ app.post("/messages", async (req,res) => {
         time: dayjs(Date.now()).format('HH:mm:ss')
     };
 
-    const { errorss } = messageSchema.validate(messagePut, { abortEarly: false });
-
-        if (errorss) {
-          const errors = error.details.map((d) => d.message);
-          return res.status(422).send(errors);
-        }
+    if (messageSchema.validate(Output).error) {
+        return res.status(422)
+    }
 
     const messageOutput = await messages.insertOne(messagePut);
 

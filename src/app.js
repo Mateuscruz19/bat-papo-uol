@@ -1,12 +1,13 @@
-import express from "express";
+import express, { query } from "express";
+import cors from "cors";
 import dotenv from "dotenv";
 import { MongoClient } from "mongodb";
 import dayjs from "dayjs";
 import joi from "joi";
 
-
-dotenv.config();
 const app = express();
+dotenv.config();
+app.use(cors());
 app.use(express.json());
 
     const participantsSchema = joi.object({
@@ -14,11 +15,12 @@ app.use(express.json());
     });
 
     const messageSchema = joi.object({
-        to: joi.string().required(),
-        text: joi.string().min(1).required(),
-        type: joi.any().valid('message','private_message').required()
-    })
-
+        from: joi.string().required(),
+        to: joi.string().required().min(3),
+        text: joi.string().required().min(1),
+        type: joi.string().required().valid("message", "private_message"),
+        time: joi.string(),
+      });
 
 const mongoClient = new MongoClient(process.env.DATABASE_URL);
 let db;
@@ -34,38 +36,41 @@ try {
     const messages = db.collection("messages")
     const today = Date.now();
 
-    app.post("/participants", async (req, res) => {
-        const { name } = req.body;
-      
-        const { error } = participantsSchema.validate({ name }, { abortEarly: false });
-      
-        if (error) {
-          const errors = error.details.map((detail) => detail.message);
-          return res.status(422).send(errors);
-        }
-      
-        try {
-          const participantExists = await participants.findOne({ name });
-          if (participantExists) {
-            return res.sendStatus(409);
-          }
-      
-          await participants.insertOne({ name, lastStatus: Date.now() });
-      
-          await messages.insertOne({
-            from: name,
-            to: "Todos",
-            text: "entrei na sala...",
-            type: "status",
-            time: dayjs().format("HH:mm:ss"),
-          });
-      
-          res.sendStatus(201);
-        } catch (err) {
-          console.log(err);
-          res.sendStatus(500);
-        }
-      });
+app.post("/participants", async (req,res) => {
+
+    const { name } = req.body
+
+    const { error } = participantsSchema.validate({ name }, { abortEarly: false })
+
+    if(error) {
+        const errors = error.details.map((d) => d.message);
+        return res.status(422).send(errors)
+    }
+
+    try {
+        const participantsExists = await participants.findOne({ name });
+        if(participantsExists) {
+        return res.sendStatus(409);
+    }
+
+
+    await participants.insertOne({ name, lastStatus: today})
+
+    await messages.insertOne({
+        from: name,
+        to: "Todos",
+        text: "entra na sala...",
+        type: "status",
+        time: dayjs().format("HH:mm:ss")
+    })
+
+    res.sendStatus(201);
+    } catch (err) {
+        console.log(err);
+        res.sendStatus(500);
+    }
+})
+
 
 app.get("/participants", async (req, res) => {
     
@@ -85,8 +90,7 @@ app.post("/messages", async (req,res) => {
 
     try {
 
-    
-        const Output = req.body;
+        const { to, text, type } = req.body;
         const { user } = req.headers
     
         const userValidade = await participants.findOne({ name: user })
@@ -94,23 +98,24 @@ app.post("/messages", async (req,res) => {
 
     const messagePut = {
         from: user,
-        ...Output,
-        time: dayjs(Date.now()).format('HH:mm:ss')
+        to,
+        text,
+        type,
+        ime: dayjs().format("HH:mm:ss"),
     };
 
-    if (messageSchema.validate(Output).error) {
-        return res.status(422)
+    const { error } = messageSchema.validate(messagePut, { abortEarly: false });
+
+    if (error) {
+      return res.sendStatus(422);
     }
 
-    const messageOutput = await messages.insertOne(messagePut);
+    await messages.insertOne(messagePut);
 
-    if(messageOutput) return res.sendStatus(201);
+    return res.sendStatus(201);
 
-    } catch (error) {
-        console.log(error)
-
-        if(error.isJoi) return res.sendStatus;
-
+    } catch (err) {
+        console.log(err)
        return res.sendStatus(500);
     }
 

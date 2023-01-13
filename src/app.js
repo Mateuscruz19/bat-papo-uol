@@ -34,7 +34,6 @@ try {
     }
     
     const participants = db.collection("participants");
-    const maintenance = db.collection("maintenance")
     const messages = db.collection("messages")
     const today = Date.now();
 
@@ -117,7 +116,7 @@ app.post("/messages", async (req,res) => {
 
 });
 
- app.get("/messages", async (req,res) => {
+app.get("/messages", async (req,res) => {
 
     const limit  = Number(req.query.limit);
     const { User } = req.headers;
@@ -135,16 +134,32 @@ app.post("/messages", async (req,res) => {
         ]})
         .limit(limit)
       .toArray();
-      
+
     } catch (err) {
         console.log(err)
         res.sendStatus(500);
     }
  })
 
-// app.get("/status", (req,res) => {
+app.post("/status", async (req,res) => {
+    const { User } = req.headers
+        try {   
+            const onList = await participants.findOne({ name: User })
+            if(!onList) return res.sendStatus(404);
+    
+        await participants.updateOne(
+            {name:User},
+            {$set: {lastStatus: today } }
+        );
 
-// })
+            res.sendStatus(200);
+
+        } catch (err) {
+            console.log(err);
+            res.sendStatus(500);
+        }
+    
+ })
 
 
 

@@ -3,13 +3,31 @@ import cors from "cors";
 import dotenv from "dotenv";
 import { MongoClient } from "mongodb";
 import dayjs from "dayjs";
+import joi from "joi";
 
 const app = express();
 dotenv.config();
 app.use(cors());
 app.use(express.json());
 
-const mongoClient = new MongoClient(process.env.MONGO_URI);
+    const participantsSchema = joi.object({
+        name: joi.string().required().min(3)
+    });
+
+    const messageSchema = joi.object({
+        from: joi.string().required(),
+        to: joi.string().required().min(3),
+        text: joi.string().required().min(1),
+        type: joi.string().required().valid("message", "private_message"),
+        time: joi.string(),
+    })
+
+
+
+
+
+
+const mongoClient = new MongoClient(process.env.DATABASE_URI);
 let db;
 
 try {
@@ -19,7 +37,7 @@ try {
     console.log("Erro no mongo.conect", err.message);
     }
     
-    const Participants = db.collection("participants");
+    const participants = db.collection("participants");
     const Maintenance = db.collection("maintenance")
     const Messages = db.collection("Messages")
     const today = Date.now();
@@ -31,12 +49,13 @@ app.post("/participants", async (req,res) => {
     if(typeof name != 'string' || !name) return res.status(422)
 
     try {
-        const participantsExists = await Participants.findOne({ name });
+        const participantsExists = await participants.findOne({ name });
         if(participantsExists) {
         return res.sendStatus(409);
     }
 
-    await Participants.insertOne({ name, lastStatus: today})
+
+    await participants.insertOne({ name, lastStatus: today})
 
     await Messages.insertOne({
         from: name,

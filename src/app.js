@@ -85,39 +85,30 @@ app.get("/participants", async (req, res) => {
 })
 
 app.post("/messages", async (req,res) => {
-   
+
+    const { to, text, type } = req.body;
+    const from = req.headers.user;
+
+
+    if (messageSchema.validate({ to, text, type }).error) {
+        return res.status(422);
+    }
 
     try {
+        const isLogged = await participants.findOne({ name: from });
+        if (!isLogged) return res.status(422).send("Usuário não está logado!");
 
-    
-        const Output = req.body;
-        const { user } = req.headers
-    
-        const userValidade = await participants.findOne({ name: user })
-        if(!userValidade) return res.sendStatus(422)
-
-    const messagePut = {
-        from: user,
-        ...Output,
-        time: dayjs(Date.now()).format('HH:mm:ss')
-    };
-
-    if (messageSchema.validate(Output).error) {
-        return res.status(422)
+        await db.collection("messages").insertOne({
+            from,
+            to,
+            text,
+            type,
+            time: dayjs().format('HH:mm:ss')
+        })
+        res.status(201);
+    } catch (err) {
+        return res.status(500).send(err.message);
     }
-
-    const messageOutput = await messages.insertOne(messagePut);
-
-    if(messageOutput) return res.sendStatus(201);
-
-    } catch (error) {
-        console.log(error)
-
-        if(error.isJoi) return res.sendStatus;
-
-       return res.sendStatus(500);
-    }
-
 });
 
 

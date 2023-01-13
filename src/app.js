@@ -23,10 +23,6 @@ app.use(express.json());
     })
 
 
-
-
-
-
 const mongoClient = new MongoClient(process.env.DATABASE_URI);
 let db;
 
@@ -38,8 +34,8 @@ try {
     }
     
     const participants = db.collection("participants");
-    const Maintenance = db.collection("maintenance")
-    const Messages = db.collection("Messages")
+    const maintenance = db.collection("maintenance")
+    const messages = db.collection("messages")
     const today = Date.now();
 
 app.post("/participants", async (req,res) => {
@@ -62,7 +58,7 @@ app.post("/participants", async (req,res) => {
 
     await participants.insertOne({ name, lastStatus: today})
 
-    await Messages.insertOne({
+    await messages.insertOne({
         from: name,
         to: "Todos",
         text: "entrei na sala...",
@@ -78,9 +74,18 @@ app.post("/participants", async (req,res) => {
 })
 
 
-// app.get("/participants", (req,res) => {
+app.get("/participants", async (res) => {
     
-// })
+    try {
+       const online = await participants.find().toArray();
+       if(!online) return res.status(404);
+       res.send(online)
+    } catch (error) {
+        console.log(error)
+        res.status(500);
+    } 
+
+})
 
 // app.post("/messages", (req,res) => {
 
@@ -96,4 +101,4 @@ app.post("/participants", async (req,res) => {
 
 
 
-app.listen(process.env.PORT, () => console.log(`Server running in port: ${process.env.PORT}`));
+app.listen(5000, () => console.log(`Server running in port: 5000`));

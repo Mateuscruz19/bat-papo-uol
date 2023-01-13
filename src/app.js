@@ -119,7 +119,7 @@ app.post("/messages", async (req,res) => {
 app.get("/messages", async (req,res) => {
 
     const limit  = Number(req.query.limit);
-    const { User } = req.headers;
+    const { user } = req.headers;
 
     if(!limit){
         const allMessages = messages.find();
@@ -128,8 +128,8 @@ app.get("/messages", async (req,res) => {
 
     try {
         const messageControled = await messages.find({$or: [
-            {from: User},
-            {to: {$in: [User, "Todos"] } },
+            {from: user},
+            {to: {$in: [user, "Todos"] } },
             {type:"message"}
         ]})
         .limit(limit)
@@ -143,13 +143,13 @@ app.get("/messages", async (req,res) => {
  })
 
 app.post("/status", async (req,res) => {
-    const { User } = req.headers
+    const { user } = req.headers
         try {   
-            const onList = await participants.findOne({ name: User })
+            const onList = await participants.findOne({ name: user })
             if(!onList) return res.sendStatus(404);
     
         await participants.updateOne(
-            {name:User},
+            {name:user},
             {$set: {lastStatus: today } }
         );
 

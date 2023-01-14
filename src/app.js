@@ -140,9 +140,9 @@ app.get("/messages", async (req,res) => {
             {type:"message"}
         ]})
         .limit(limit)
-      .toArray().reverse();
+      .toArray();
 
-        res.send(messageControled)
+        res.send(messageControled.reverse())
     } catch (err) {
         console.log(err)
         res.sendStatus(500);

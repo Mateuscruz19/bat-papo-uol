@@ -105,7 +105,7 @@ app.post("/messages", async (req,res) => {
     const messageValid  = messageSchema.validate(Output, {abortEarly: false})
 
     if(messageValid.error){
-        return res.sendStatus(400)
+        return res.sendStatus(422)
     }
 
     const messageOutput = await messages.insertOne(messagePut);

@@ -141,7 +141,7 @@ app.get("/messages", async (req,res) => {
 
             if(numberLimit < 1 || isNaN(numberLimit)) return res.sendStatus(422)
 
-            return res.send([...messageControled].reverse());
+            return res.send([...messageControled].slice(-numberLimit).reverse());
         }
 
         res.send([...messageControled].reverse())

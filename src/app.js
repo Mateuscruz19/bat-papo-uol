@@ -125,11 +125,6 @@ app.post("/messages", async (req,res) => {
 
 app.get("/messages", async (req,res) => {
 
-    if(!limit){
-        const allMessages = messages.find();
-       return res.send(allMessages.reverse())
-    }
-
     try {
 
         const { limit } = req.query ;

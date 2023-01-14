@@ -130,7 +130,7 @@ app.get("/messages", async (req,res) => {
 
     if(!limit){
         const allMessages = messages.find();
-       return res.send(allMessages)
+       return res.send(allMessages.reverse())
     }
 
     try {

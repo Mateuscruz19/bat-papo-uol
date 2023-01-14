@@ -20,6 +20,7 @@ app.use(express.json());
         type: joi.any().valid('message','private_message').required()
     })
 
+    checkInactiveUsers()
 
 const mongoClient = new MongoClient(process.env.DATABASE_URL);
 let db;
@@ -152,14 +153,16 @@ app.get("/messages", async (req,res) => {
  })
 
 app.post("/status", async (req,res) => {
+
     const { user } = req.headers
+
         try {   
             const onList = await participants.findOne({ name: user })
             if(!onList) return res.sendStatus(404);
     
         await participants.updateOne(
             {name:user},
-            {$set: {lastStatus: today } }
+            {$set: {lastStatus: Date.now() } }
         );
 
             res.sendStatus(200);
@@ -171,34 +174,61 @@ app.post("/status", async (req,res) => {
     
  })
 
-setInterval(async () => {
-
-    const timeRemove = today - 10000;
+ app.delete("/messages/:id", async (req, res) => {
+    const requestUser = req.headers.user
+    const { id } = req.params
 
     try {
-        
-        const layoff = await participants.find( {lastStatus: {$lte: timeRemove}}).toArray();
+        const message = await messages.findOne({ _id: ObjectId(id) })
 
-        if(layoff.length > 0) {
-            const leaveNotice = layoff.map((p) => {
-                return {
-                    from: p.name,
-                    to: "Todos",
-                    text: "sai da sala...",
-                    type: "status",
-                    time: dayjs().format("HH:mm:ss"),
-                };
-            });
+        if (!message) return res.sendStatus(404)
 
-            await messages.insertMany(leaveNotice)
-            await participants.deleteMany( {lastStatus: { $lte: timeRemove}})
+        if (message.from !== requestUser) return res.sendStatus(401)
+
+        await message.deleteOne({ _id: ObjectId(id) })
+
+        return res.sendStatus(200)
+
+    } catch (err) {
+
+        console.log(err)
+
+        return res.sendStatus(500)
+    }
+})
+
+function checkInactiveUsers() {
+    const timeTolerance = 10000
+
+    setInterval(async () => {
+
+        const timeBottomLimit = Date.now() - timeTolerance
+
+        try {
+            const participants = participants.find().toArray()
+
+            participants.forEach(async (p) => {
+
+                if (p.lastStatus < timeBottomLimit) {
+
+                    await participants.deleteOne({ _id: ObjectId(p._id) })
+
+                    await db.collection("messages").insertOne({
+                        from: p.name,
+                        to: 'Todos',
+                        text: 'sai da sala...',
+                        type: 'status',
+                        time: dayjs(Date.now()).format('HH:mm:ss')
+                    })
+                }
+            })
+
+        } catch (err) {
+            console.log(err)
+            return res.sendStatus(500)
         }
 
-    } catch (error) {
-        console.log(error);
-        res.sendStatus(500);
-    }
-}, 15000);
-
+    }, timeTolerance)
+}
 
 app.listen(5000, () => console.log(`Server running in port: 5000`));

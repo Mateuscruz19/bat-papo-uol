@@ -15,12 +15,11 @@ app.use(express.json());
     });
 
     const messageSchema = joi.object({
-        from: joi.string().required(),
-        to: joi.string().required().min(3),
-        text: joi.string().required().min(1),
-        type: joi.string().required().valid("message", "private_message"),
-        time: joi.string(),
-      });
+        to: joi.string().required(),
+        text: joi.string().min(1).required(),
+        type: joi.any().valid('message','private_message').required()
+    })
+
 
 const mongoClient = new MongoClient(process.env.DATABASE_URL);
 let db;
@@ -90,7 +89,8 @@ app.post("/messages", async (req,res) => {
 
     try {
 
-        const { to, text, type } = req.body;
+    
+        const Output = req.body;
         const { user } = req.headers
     
         const userValidade = await participants.findOne({ name: user })
@@ -98,24 +98,23 @@ app.post("/messages", async (req,res) => {
 
     const messagePut = {
         from: user,
-        to,
-        text,
-        type,
-        ime: dayjs().format("HH:mm:ss"),
+        ...Output,
+        time: dayjs(Date.now()).format('HH:mm:ss')
     };
 
-    const { error } = messageSchema.validate(messagePut, { abortEarly: false });
-
-    if (error) {
-      return res.sendStatus(422);
+    if (messageSchema.validate(Output).error) {
+        return res.status(422)
     }
 
-    await messages.insertOne(messagePut);
+    const messageOutput = await messages.insertOne(messagePut);
 
-    return res.sendStatus(201);
+    if(messageOutput) return res.sendStatus(201);
 
-    } catch (err) {
-        console.log(err)
+    } catch (error) {
+        console.log(error)
+
+        if(error.isJoi) return res.sendStatus;
+
        return res.sendStatus(500);
     }
 

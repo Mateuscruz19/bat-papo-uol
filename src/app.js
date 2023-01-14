@@ -9,6 +9,9 @@ const app = express();
 dotenv.config();
 app.use(cors());
 app.use(express.json());
+let db;
+
+    checkInactiveUsers()
 
     const participantsSchema = joi.object({
         name: joi.string().required().min(3)
@@ -20,10 +23,9 @@ app.use(express.json());
         type: joi.any().valid('message','private_message').required()
     })
 
-    checkInactiveUsers()
+  
 
 const mongoClient = new MongoClient(process.env.DATABASE_URL);
-let db;
 
 try {
      mongoClient.connect();
@@ -179,13 +181,13 @@ app.post("/status", async (req,res) => {
     const { id } = req.params
 
     try {
-        const message = await messages.findOne({ _id: ObjectId(id) })
+        const messageTry = await messages.findOne({ _id: ObjectId(id) })
 
-        if (!message) return res.sendStatus(404)
+        if (!messageTry) return res.sendStatus(404)
 
-        if (message.from !== requestUser) return res.sendStatus(401)
+        if (messageTry.from !== requestUser) return res.sendStatus(401)
 
-        await message.deleteOne({ _id: ObjectId(id) })
+        await messages.deleteOne({ _id: ObjectId(id) })
 
         return res.sendStatus(200)
 

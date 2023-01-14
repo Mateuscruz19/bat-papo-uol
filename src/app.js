@@ -202,18 +202,18 @@ function checkInactiveUsers() {
 
     setInterval(async () => {
 
-        const timeBottomLimit = Date.now() - timeTolerance
+        const time = Date.now() - timeTolerance
 
         try {
-            const participantsOn = participants.find().toArray()
+            const participantsUpdate = await participants.find().toArray()
 
-            participantsOn.forEach(async (p) => {
+            participantsUpdate.forEach(async (p) => {
 
-                if (p.lastStatus < timeBottomLimit) {
+                if (p.lastStatus < time) {
 
                     await participants.deleteOne({ _id: ObjectId(p._id) })
 
-                    await db.collection("messages").insertOne({
+                    await messages.insertOne({
                         from: p.name,
                         to: 'Todos',
                         text: 'sai da sala...',

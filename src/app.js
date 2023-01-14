@@ -205,9 +205,9 @@ function checkInactiveUsers() {
         const timeBottomLimit = Date.now() - timeTolerance
 
         try {
-            const participants = participants.find().toArray()
+            const participantsOn = participants.find().toArray()
 
-            participants.forEach(async (p) => {
+            participantsOn.forEach(async (p) => {
 
                 if (p.lastStatus < timeBottomLimit) {
 

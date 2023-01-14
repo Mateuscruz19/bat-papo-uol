@@ -125,24 +125,31 @@ app.post("/messages", async (req,res) => {
 
 app.get("/messages", async (req,res) => {
 
-    const limit  = Number(req.query.limit);
-    const { user } = req.headers;
-
     if(!limit){
         const allMessages = messages.find();
        return res.send(allMessages.reverse())
     }
 
     try {
+
+        const { limit } = req.query ;
+        const { user } = req.headers;
+
         const messageControled = await messages.find({$or: [
             {from: user},
             {to: {$in: [user, "Todos"] } },
-            {type:"message"}
         ]})
-        .limit(limit)
       .toArray();
 
-        res.send(messageControled.reverse())
+        if(limit) {
+            const numberLimit = Number(query.limit)
+
+            if(numberLimit < 1 || isNaN(numberLimit)) return res.sendStatus(422)
+
+            return res.send([...messageControled].reverse());
+        }
+
+        res.send([...messageControled].reverse())
     } catch (err) {
         console.log(err)
         res.sendStatus(500);

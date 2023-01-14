@@ -10,16 +10,17 @@ dotenv.config();
 app.use(cors());
 app.use(express.json());
 
-    const participantsSchema = joi.object({
-        name: joi.string().required().min(3)
-    });
-
-    const messageSchema = joi.object({
-        to: joi.string().required(),
-        text: joi.string().min(1).required(),
-        type: joi.any().valid('message','private_message').required()
-    })
-
+const participantsSchema = joi.object({
+    name: joi.string().required().min(3),
+  });
+  
+  const messageSchema = joi.object({
+    from: joi.string().required(),
+    to: joi.string().required().min(3),
+    text: joi.string().required().min(1),
+    type: joi.string().required().valid("message", "private_message"),
+    time: joi.string(),
+  });
 
 const mongoClient = new MongoClient(process.env.DATABASE_URL);
 let db;
@@ -102,8 +103,10 @@ app.post("/messages", async (req,res) => {
         time: dayjs(Date.now()).format('HH:mm:ss')
     };
 
-    if (messageSchema.validate(Output).error) {
-        return res.status(422)
+    const messageValid  = messageSchema.validate(Output, {abortEarly: false})
+
+    if(messageValid.error){
+        return res.sendStatus(400)
     }
 
     const messageOutput = await messages.insertOne(messagePut);
@@ -138,6 +141,7 @@ app.get("/messages", async (req,res) => {
             {type:"message"}
         ]})
         .limit(limit)
+        .reverse()
       .toArray();
 
         res.send(messageControled)

@@ -140,8 +140,7 @@ app.get("/messages", async (req,res) => {
             {type:"message"}
         ]})
         .limit(limit)
-        .reverse()
-      .toArray();
+      .toArray().reverse();
 
         res.send(messageControled)
     } catch (err) {

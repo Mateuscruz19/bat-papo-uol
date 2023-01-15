@@ -4,7 +4,7 @@ import dotenv from "dotenv";
 import { MongoClient, ObjectId } from "mongodb";
 import dayjs from "dayjs";
 import joi from "joi";
-import sanitize from "sanitize-html";
+import stripHtml from "string-strip-html";
 
 const app = express();
 dotenv.config();
@@ -40,7 +40,7 @@ try {
 app.post("/participants", async (req,res) => {
 
     const { name } = req.body
-    const CleanName = sanitize(name).trim();
+    const CleanName = stripHtml(name).trim();
 
     const { error } = participantsSchema.validate({ CleanName }, { abortEarly: false })
 
@@ -94,7 +94,7 @@ app.post("/messages", async (req,res) => {
     
         const {to, text, type} = req.body;
         const { user } = req.headers
-        const CleanText = sanitize(text).trim();
+        const CleanText = stripHtml(text).trim();
 
         const userValidade = await participants.findOne({ name: user })
         if(!userValidade) return res.sendStatus(422)
@@ -202,10 +202,43 @@ app.post("/status", async (req,res) => {
     }
 })
 
+
+app.put("/messages/:id", async (req, res) => {
+
+    const requestUser = req.headers.user
+    const { id } = req.params
+
+    try {
+        const { error } = messageSchema.validate(req.body, {abortEarly: false})
+
+        if(error) {
+        const errors = error.details.map((d) => d.message);
+        return res.status(422).send(errors)
+         }
+
+        const messageTry = await messages.findOne({ _id: ObjectId(id) })
+
+        if (!messageTry) return res.sendStatus(404)
+
+        if (messageTry.from !== requestUser) return res.sendStatus(401)
+
+        await messages.updateOne({ _id: ObjectId(id) }, { $set: {...req.body}})
+
+        return res.sendStatus(200)
+
+    } catch (err) {
+
+        console.log(err)
+        return res.sendStatus(500)
+    }
+})
+
+
+
+
     setInterval(async () => {
 
         const time = Date.now() - 10000
-        console.log(time)
 
         try {
             const participantsUpdate = await participants.find().toArray()

@@ -202,7 +202,7 @@ app.post("/status", async (req,res) => {
 
             participantsUpdate.forEach(async (p) => {
 
-                if (p.lastStatus < time) {
+                if (p.lastStatus <= time) {
 
                     await participants.deleteOne({ name: p.name})
 

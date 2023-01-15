@@ -87,9 +87,7 @@ app.get("/participants", async (req, res) => {
 
 app.post("/messages", async (req,res) => {
    
-
     try {
-
     
         const Output = req.body;
         const { user } = req.headers
@@ -197,15 +195,16 @@ app.post("/status", async (req,res) => {
     setInterval(async () => {
 
         const time = Date.now() - 10000
+        console.log(time)
 
         try {
             const participantsUpdate = await participants.find().toArray()
 
             participantsUpdate.forEach(async (p) => {
 
-                if (p.lastStatus < time) {
+                if (p.lastStatus >= time) {
 
-                    await participants.deleteOne({ _id: ObjectId(p._id) })
+                    await participants.deleteOne({ name: p.name})
 
                     await messages.insertOne({
                         from: p.name,
@@ -222,7 +221,7 @@ app.post("/status", async (req,res) => {
             return res.sendStatus(500)
         }
 
-    }, 10000)
+    }, 15000)
 
 
 app.listen(5000, () => console.log(`Server running in port: 5000`));

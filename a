@@ -1,0 +1,30 @@
+
+app.put("/messages/:id", async (req, res) => {
+
+    const requestUser = req.headers.user
+    const { id } = req.params
+
+    try {
+        const { error } = messageSchema.validate(req.body, {abortEarly: false})
+
+        if(error) {
+        const errors = error.details.map((d) => d.message);
+        return res.status(422).send(errors)
+         }
+
+        const messageTry = await messages.findOne({ _id: ObjectId(id) })
+
+        if (!messageTry) return res.sendStatus(404)
+
+        if (messageTry.from !== requestUser) return res.sendStatus(401)
+
+        await messages.updateOne({ _id: ObjectId(id) }, { $set: {...req.body}})
+
+        return res.sendStatus(200)
+
+    } catch (err) {
+
+        console.log(err)
+        return res.sendStatus(500)
+    }
+})

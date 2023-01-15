@@ -4,7 +4,6 @@ import dotenv from "dotenv";
 import { MongoClient, ObjectId } from "mongodb";
 import dayjs from "dayjs";
 import joi from "joi";
-import stripHtml from "string-strip-html";
 
 const app = express();
 dotenv.config();
@@ -40,9 +39,8 @@ try {
 app.post("/participants", async (req,res) => {
 
     const { name } = req.body
-    const CleanName = stripHtml(name).trim();
-
-    const { error } = participantsSchema.validate({ CleanName }, { abortEarly: false })
+    const ValideName = name.trim();
+    const { error } = participantsSchema.validate({ ValideName }, { abortEarly: false })
 
     if(error) {
         const errors = error.details.map((d) => d.message);
@@ -50,16 +48,16 @@ app.post("/participants", async (req,res) => {
     }
 
     try {
-        const participantsExists = await participants.findOne({ CleanName });
+        const participantsExists = await participants.findOne({ ValideName });
         if(participantsExists) {
         return res.sendStatus(409);
     }
 
 
-    await participants.insertOne({ CleanName, lastStatus: today})
+    await participants.insertOne({ ValideName, lastStatus: today})
 
     await messages.insertOne({
-        from: CleanName,
+        from: ValideName,
         to: "Todos",
         text: "entra na sala...",
         type: "status",
@@ -87,36 +85,28 @@ app.get("/participants", async (req, res) => {
 
 })
 
-
 app.post("/messages", async (req,res) => {
    
     try {
     
-        const {to, text, type} = req.body;
+        const Output = req.body;
         const { user } = req.headers
-        const CleanText = stripHtml(text).trim();
-
+    
         const userValidade = await participants.findOne({ name: user })
         if(!userValidade) return res.sendStatus(422)
 
-   const verificateString = {
-        to,
-        CleanText,
-        type
-   }
+    const messagePut = {
+        from: user,
+        ...Output,
+        time: dayjs(Date.now()).format('HH:mm:ss')
+    };
 
-    const { error } = messageSchema.validate(verificateString, {abortEarly: false})
+    const { error } = messageSchema.validate(Output, {abortEarly: false})
 
     if(error) {
         const errors = error.details.map((d) => d.message);
         return res.status(422).send(errors)
     }
-
-    const messagePut = {
-        from: user,
-        ...verificateString,
-        time: dayjs(Date.now()).format('HH:mm:ss')
-    };
 
     const messageOutput = await messages.insertOne(messagePut);
 
@@ -202,7 +192,6 @@ app.post("/status", async (req,res) => {
     }
 })
 
-
 app.put("/messages/:id", async (req, res) => {
 
     const requestUser = req.headers.user
@@ -233,12 +222,10 @@ app.put("/messages/:id", async (req, res) => {
     }
 })
 
-
-
-
     setInterval(async () => {
 
         const time = Date.now() - 10000
+        console.log(time)
 
         try {
             const participantsUpdate = await participants.find().toArray()

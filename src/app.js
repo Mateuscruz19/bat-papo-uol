@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import { MongoClient, ObjectId } from "mongodb";
 import dayjs from "dayjs";
 import joi from "joi";
+import sanitize from "sanitize-html";
 
 const app = express();
 dotenv.config();
@@ -39,8 +40,9 @@ try {
 app.post("/participants", async (req,res) => {
 
     const { name } = req.body
+    const CleanName = sanitize(name).trim();
 
-    const { error } = participantsSchema.validate({ name }, { abortEarly: false })
+    const { error } = participantsSchema.validate({ CleanName }, { abortEarly: false })
 
     if(error) {
         const errors = error.details.map((d) => d.message);
@@ -48,16 +50,16 @@ app.post("/participants", async (req,res) => {
     }
 
     try {
-        const participantsExists = await participants.findOne({ name });
+        const participantsExists = await participants.findOne({ CleanName });
         if(participantsExists) {
         return res.sendStatus(409);
     }
 
 
-    await participants.insertOne({ name, lastStatus: today})
+    await participants.insertOne({ CleanName, lastStatus: today})
 
     await messages.insertOne({
-        from: name,
+        from: CleanName,
         to: "Todos",
         text: "entra na sala...",
         type: "status",
@@ -85,28 +87,36 @@ app.get("/participants", async (req, res) => {
 
 })
 
+
 app.post("/messages", async (req,res) => {
    
     try {
     
-        const Output = req.body;
+        const {to, text, type} = req.body;
         const { user } = req.headers
-    
+        const CleanText = sanitize(text).trim();
+
         const userValidade = await participants.findOne({ name: user })
         if(!userValidade) return res.sendStatus(422)
 
-    const messagePut = {
-        from: user,
-        ...Output,
-        time: dayjs(Date.now()).format('HH:mm:ss')
-    };
+   const verificateString = {
+        to,
+        CleanText,
+        type
+   }
 
-    const { error } = messageSchema.validate(Output, {abortEarly: false})
+    const { error } = messageSchema.validate(verificateString, {abortEarly: false})
 
     if(error) {
         const errors = error.details.map((d) => d.message);
         return res.status(422).send(errors)
     }
+
+    const messagePut = {
+        from: user,
+        ...verificateString,
+        time: dayjs(Date.now()).format('HH:mm:ss')
+    };
 
     const messageOutput = await messages.insertOne(messagePut);
 

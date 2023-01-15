@@ -1,7 +1,7 @@
 import express, { query } from "express";
 import cors from "cors";
 import dotenv from "dotenv";
-import { MongoClient } from "mongodb";
+import { MongoClient, ObjectId } from "mongodb";
 import dayjs from "dayjs";
 import joi from "joi";
 
@@ -10,8 +10,6 @@ dotenv.config();
 app.use(cors());
 app.use(express.json());
 let db;
-
-    checkInactiveUsers()
 
     const participantsSchema = joi.object({
         name: joi.string().required().min(3)
@@ -105,24 +103,21 @@ app.post("/messages", async (req,res) => {
         time: dayjs(Date.now()).format('HH:mm:ss')
     };
 
-    const messageValid  = messageSchema.validate(Output, {abortEarly: false})
+    const { error } = messageSchema.validate(Output, {abortEarly: false})
 
-    if(messageValid.error){
-        return res.sendStatus(422)
+    if(error) {
+        const errors = error.details.map((d) => d.message);
+        return res.status(422).send(errors)
     }
 
     const messageOutput = await messages.insertOne(messagePut);
 
     if(messageOutput) return res.sendStatus(201);
 
-    } catch (error) {
-        console.log(error)
-
-        if(error.isJoi) return res.sendStatus;
-
-       return res.sendStatus(500);
+    } catch (err) {
+    console.log(err);
+    res.sendStatus(500);
     }
-
 });
 
 
@@ -199,12 +194,9 @@ app.post("/status", async (req,res) => {
     }
 })
 
-function checkInactiveUsers() {
-    const timeTolerance = 10000
-
     setInterval(async () => {
 
-        const time = Date.now() - timeTolerance
+        const time = Date.now() - 10000
 
         try {
             const participantsUpdate = await participants.find().toArray()
@@ -230,7 +222,7 @@ function checkInactiveUsers() {
             return res.sendStatus(500)
         }
 
-    }, timeTolerance)
-}
+    }, 10000)
+
 
 app.listen(5000, () => console.log(`Server running in port: 5000`));

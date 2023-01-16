@@ -38,7 +38,7 @@ try {
 
 app.post("/participants", async (req,res) => {
 
-    const { name } = req.body.trim()
+    const { name } = req.body
 
     const { error } = participantsSchema.validate({ name }, { abortEarly: false })
 
@@ -89,31 +89,24 @@ app.post("/messages", async (req,res) => {
    
     try {
     
-        const {to, text ,type} = req.body;
-        const ValidadeMessage = text.trim()
+        const Output = req.body;
         const { user } = req.headers
     
         const userValidade = await participants.findOne({ name: user })
         if(!userValidade) return res.sendStatus(422)
 
-    const VM = {
-        to,
-        ValidadeMessage,
-        type
-    }
+    const messagePut = {
+        from: user,
+        ...Output,
+        time: dayjs(Date.now()).format('HH:mm:ss')
+    };
 
-    const { error } = messageSchema.validate(VM, {abortEarly: false})
+    const { error } = messageSchema.validate(Output, {abortEarly: false})
 
     if(error) {
         const errors = error.details.map((d) => d.message);
         return res.status(422).send(errors)
     }
-
-    const messagePut = {
-        from: user,
-        ...VM,
-        time: dayjs(Date.now()).format('HH:mm:ss')
-    };
 
     const messageOutput = await messages.insertOne(messagePut);
 

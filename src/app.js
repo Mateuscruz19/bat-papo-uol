@@ -39,8 +39,8 @@ try {
 app.post("/participants", async (req,res) => {
 
     const { name } = req.body
-    const ValideName = name.trim();
-    const { error } = participantsSchema.validate({ ValideName }, { abortEarly: false })
+
+    const { error } = participantsSchema.validate({ name }, { abortEarly: false })
 
     if(error) {
         const errors = error.details.map((d) => d.message);
@@ -48,16 +48,16 @@ app.post("/participants", async (req,res) => {
     }
 
     try {
-        const participantsExists = await participants.findOne({ ValideName });
+        const participantsExists = await participants.findOne({ name });
         if(participantsExists) {
         return res.sendStatus(409);
     }
 
 
-    await participants.insertOne({ ValideName, lastStatus: today})
+    await participants.insertOne({ name, lastStatus: today})
 
     await messages.insertOne({
-        from: ValideName,
+        from: name,
         to: "Todos",
         text: "entra na sala...",
         type: "status",
@@ -191,6 +191,7 @@ app.post("/status", async (req,res) => {
         return res.sendStatus(500)
     }
 })
+
 
 app.put("/messages/:id", async (req, res) => {
 
